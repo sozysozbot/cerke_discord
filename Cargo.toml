@@ -1,0 +1,11 @@
+[package]
+name = "cerke_discord"
+version = "0.1.0"
+authors = ["jekto_vatimeliju <jekto.vatimeliju@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde_json = "1.0.53"
+serenity = "0.8"
