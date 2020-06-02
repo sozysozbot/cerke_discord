@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate lazy_static;
+
 use serenity::client::Client;
 use serenity::framework::standard::{
     macros::{command, group},
@@ -6,8 +9,10 @@ use serenity::framework::standard::{
 use serenity::model::channel::Message;
 use serenity::prelude::{Context, EventHandler};
 
+pub mod bot;
+
 #[group]
-#[commands(ping)]
+#[commands(ping, log)]
 struct General;
 
 use std::env;
@@ -33,6 +38,14 @@ fn main() {
 }
 
 #[command]
+fn log(ctx: &mut Context, msg: &Message) -> CommandResult {
+    let log = bot::LOG.lock().unwrap();
+    let content = log.join("\n");
+    msg.reply(ctx, content)?;
+    Ok(())
+}
+
+#[command]
 fn ping(ctx: &mut Context, msg: &Message) -> CommandResult {
     let content = format!("Pong! {}", msg.content);
     use serde_json;
@@ -53,6 +66,9 @@ fn ping(ctx: &mut Context, msg: &Message) -> CommandResult {
     ctx.http.send_files(msg.channel_id.0,vec![(&file, "icon.png")], serde_json::Map::new())?;
 
     msg.reply(ctx, content)?;
+
+    let mut log = bot::LOG.lock().unwrap();
+    log.push(msg.content.to_string());
 
     Ok(())
 }

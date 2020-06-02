@@ -9,3 +9,5 @@ edition = "2018"
 [dependencies]
 serde_json = "1.0.53"
 serenity = "0.8"
+render_cerke_board = "0.1.0"
+lazy_static = "1.4.0"
