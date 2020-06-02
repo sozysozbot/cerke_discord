@@ -12,7 +12,7 @@ use serenity::prelude::{Context, EventHandler};
 pub mod bot;
 
 #[group]
-#[commands(ping, log)]
+#[commands(ping, log, initiate)]
 struct General;
 
 use std::env;
@@ -42,6 +42,31 @@ fn log(ctx: &mut Context, msg: &Message) -> CommandResult {
     let log = bot::LOG.lock().unwrap();
     let content = log.join("\n");
     msg.reply(ctx, content)?;
+    Ok(())
+}
+
+#[command]
+fn initiate(ctx: &mut Context, msg: &Message) -> CommandResult {
+    use std::fs::File;
+    use render_cerke_board::*;
+
+
+    let map = serde_json::json!({
+        "content": "Loading...",
+        "tts": false,
+    });
+    ctx.http.send_message(msg.channel_id.0, &map)?;
+
+    let mut field = bot::FIELD.lock().unwrap();
+    *field = Field::new();
+
+    field.render(Side::IASide).save("iaside.png").unwrap();
+    field.render(Side::ASide).save("aside.png").unwrap();
+
+    let iaside = File::open("./iaside.png")?;
+    let aside = File::open("./aside.png")?;
+
+    ctx.http.send_files(msg.channel_id.0,vec![(&iaside, "iaside.png"), (&aside, "aside.png")], serde_json::Map::new())?;
     Ok(())
 }
 
