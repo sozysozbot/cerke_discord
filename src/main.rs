@@ -74,11 +74,11 @@ fn initiate(ctx: &mut Context, msg: &Message) -> CommandResult {
 }
 
 fn parse_coord(coord: &str) -> Option<(Row, Column)> {
-    if coord.len() < 1 || coord.len() > 3 {
+    if coord.is_empty() || coord.len() > 3 {
         return None;
     }
 
-    let column = match coord.chars().nth(0) {
+    let column = match coord.chars().next() {
         None => None, // early return
         Some('C') => Some(Column::C),
         Some('K') => Some(Column::K),
@@ -89,7 +89,7 @@ fn parse_coord(coord: &str) -> Option<(Row, Column)> {
         Some('T') => Some(Column::T),
         Some('X') => Some(Column::X),
         Some('Z') => Some(Column::Z),
-        Some(_) => None
+        Some(_) => None,
     }?;
 
     let row = match &coord[1..coord.len()] {
@@ -102,7 +102,7 @@ fn parse_coord(coord: &str) -> Option<(Row, Column)> {
         "U" => Some(Row::U),
         "Y" => Some(Row::Y),
         "IA" => Some(Row::IA),
-        _ => None
+        _ => None,
     }?;
 
     Some((row, column))
@@ -112,31 +112,45 @@ fn parse_coord(coord: &str) -> Option<(Row, Column)> {
 fn mov(ctx: &mut Context, msg: &Message) -> CommandResult {
     let input: Vec<&str> = msg.content.split_whitespace().collect();
     if input.len() < 3 {
-        msg.channel_id
-                .say(&ctx.http, format!("Not enough arguments. Expected: 2, got: {}", input.len() - 1))?;
-                return Ok(());
+        msg.channel_id.say(
+            &ctx.http,
+            format!(
+                "Not enough arguments. Expected: 2, got: {}",
+                input.len() - 1
+            ),
+        )?;
+        return Ok(());
     }
 
     let src = match parse_coord(input[1]) {
         None => {
-            msg.channel_id
-                .say(&ctx.http, format!("The first argument is incorrect. Expected a coordinate, got: {}", input[1]))?;
-                return Ok(());
+            msg.channel_id.say(
+                &ctx.http,
+                format!(
+                    "The first argument is incorrect. Expected a coordinate, got: {}",
+                    input[1]
+                ),
+            )?;
+            return Ok(());
         }
-        Some(coord) => coord
+        Some(coord) => coord,
     };
 
     let dst = match parse_coord(input[2]) {
         None => {
-            msg.channel_id
-                .say(&ctx.http, format!("The second argument is incorrect. Expected a coordinate, got: {}", input[2]))?;
-                return Ok(());
+            msg.channel_id.say(
+                &ctx.http,
+                format!(
+                    "The second argument is incorrect. Expected a coordinate, got: {}",
+                    input[2]
+                ),
+            )?;
+            return Ok(());
         }
-        Some(coord) => coord
+        Some(coord) => coord,
     };
 
     println!("moving; src: {:?},  dst: {:?}", src, dst);
-    
 
     let map = serde_json::json!({
         "content": "Loading...",
