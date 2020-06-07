@@ -73,8 +73,71 @@ fn initiate(ctx: &mut Context, msg: &Message) -> CommandResult {
     Ok(())
 }
 
+fn parse_coord(coord: &str) -> Option<(Row, Column)> {
+    if coord.len() < 1 || coord.len() > 3 {
+        return None;
+    }
+
+    let column = match coord.chars().nth(0) {
+        None => None, // early return
+        Some('C') => Some(Column::C),
+        Some('K') => Some(Column::K),
+        Some('L') => Some(Column::L),
+        Some('M') => Some(Column::M),
+        Some('N') => Some(Column::N),
+        Some('P') => Some(Column::P),
+        Some('T') => Some(Column::T),
+        Some('X') => Some(Column::X),
+        Some('Z') => Some(Column::Z),
+        Some(_) => None
+    }?;
+
+    let row = match &coord[1..coord.len()] {
+        "A" => Some(Row::A),
+        "AI" => Some(Row::AI),
+        "AU" => Some(Row::AU),
+        "E" => Some(Row::E),
+        "I" => Some(Row::I),
+        "O" => Some(Row::O),
+        "U" => Some(Row::U),
+        "Y" => Some(Row::Y),
+        "IA" => Some(Row::IA),
+        _ => None
+    }?;
+
+    Some((row, column))
+}
+
 #[command]
 fn mov(ctx: &mut Context, msg: &Message) -> CommandResult {
+    let input: Vec<&str> = msg.content.split_whitespace().collect();
+    if input.len() < 3 {
+        msg.channel_id
+                .say(&ctx.http, format!("Not enough arguments. Expected: 2, got: {}", input.len() - 1))?;
+                return Ok(());
+    }
+
+    let src = match parse_coord(input[1]) {
+        None => {
+            msg.channel_id
+                .say(&ctx.http, format!("The first argument is incorrect. Expected a coordinate, got: {}", input[1]))?;
+                return Ok(());
+        }
+        Some(coord) => coord
+    };
+
+    let dst = match parse_coord(input[2]) {
+        None => {
+            msg.channel_id
+                .say(&ctx.http, format!("The second argument is incorrect. Expected a coordinate, got: {}", input[2]))?;
+                return Ok(());
+        }
+        Some(coord) => coord
+    };
+
+    println!("moving; src: {:?},  dst: {:?}", src, dst);
+    
+
     let map = serde_json::json!({
         "content": "Loading...",
         "tts": false,
@@ -82,7 +145,7 @@ fn mov(ctx: &mut Context, msg: &Message) -> CommandResult {
     ctx.http.send_message(msg.channel_id.0, &map)?;
 
     let mut field = bot::FIELD.lock().unwrap();
-    match field.move_to_empty_square((Row::A, Column::K), (Row::A, Column::L)) {
+    match field.move_to_empty_square(dst, src) {
         Ok(()) => {
             field.render(Side::IASide).save("iaside.png").unwrap();
             field.render(Side::ASide).save("aside.png").unwrap();

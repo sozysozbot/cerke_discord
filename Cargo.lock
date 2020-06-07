@@ -1054,9 +1054,9 @@ checksum = "2439c63f3f6139d1b57529d16bc3b8bb855230c8efcc5d3a896c8bea7c3b1e84"
 
 [[package]]
 name = "render_cerke_board"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b0bdecd5406f6ba2a0732e3c33a2db74b2a98beae99dcdc991fd552a361f06f"
+checksum = "e5802d5c28452ac7a9b3442c653d5c450d28515cac85114932518d4fba21ccdf"
 dependencies = [
  "fastblur",
  "image",
