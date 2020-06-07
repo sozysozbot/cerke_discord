@@ -12,7 +12,7 @@ use serenity::prelude::{Context, EventHandler};
 pub mod bot;
 
 #[group]
-#[commands(ping, log, initiate)]
+#[commands(ping, log, initiate, mov)]
 struct General;
 
 use std::env;
@@ -45,12 +45,11 @@ fn log(ctx: &mut Context, msg: &Message) -> CommandResult {
     Ok(())
 }
 
+use render_cerke_board::*;
+use std::fs::File;
+
 #[command]
 fn initiate(ctx: &mut Context, msg: &Message) -> CommandResult {
-    use std::fs::File;
-    use render_cerke_board::*;
-
-
     let map = serde_json::json!({
         "content": "Loading...",
         "tts": false,
@@ -66,16 +65,51 @@ fn initiate(ctx: &mut Context, msg: &Message) -> CommandResult {
     let iaside = File::open("./iaside.png")?;
     let aside = File::open("./aside.png")?;
 
-    ctx.http.send_files(msg.channel_id.0,vec![(&iaside, "iaside.png"), (&aside, "aside.png")], serde_json::Map::new())?;
+    ctx.http.send_files(
+        msg.channel_id.0,
+        vec![(&iaside, "iaside.png"), (&aside, "aside.png")],
+        serde_json::Map::new(),
+    )?;
+    Ok(())
+}
+
+#[command]
+fn mov(ctx: &mut Context, msg: &Message) -> CommandResult {
+    let map = serde_json::json!({
+        "content": "Loading...",
+        "tts": false,
+    });
+    ctx.http.send_message(msg.channel_id.0, &map)?;
+
+    let mut field = bot::FIELD.lock().unwrap();
+    match field.move_to_empty_square((Row::A, Column::K), (Row::A, Column::L)) {
+        Ok(()) => {
+            field.render(Side::IASide).save("iaside.png").unwrap();
+            field.render(Side::ASide).save("aside.png").unwrap();
+
+            let iaside = File::open("./iaside.png")?;
+            let aside = File::open("./aside.png")?;
+
+            ctx.http.send_files(
+                msg.channel_id.0,
+                vec![(&iaside, "iaside.png"), (&aside, "aside.png")],
+                serde_json::Map::new(),
+            )?;
+        }
+        Err(x) => {
+            msg.channel_id
+                .say(&ctx.http, format!("Invalid move. Reason: {:?}", x))?;
+        }
+    }
+
     Ok(())
 }
 
 #[command]
 fn ping(ctx: &mut Context, msg: &Message) -> CommandResult {
     let content = format!("Pong! {}", msg.content);
-    use serde_json;
-    use std::fs::File;
     use serenity::model::misc::Mentionable;
+    use std::fs::File;
     let mut gen = msg.author.mention();
     gen.push_str(": ");
     gen.push_str(&content);
@@ -88,7 +122,11 @@ fn ping(ctx: &mut Context, msg: &Message) -> CommandResult {
     let file = File::open("./icon.png")?;
 
     ctx.http.send_message(msg.channel_id.0, &map)?;
-    ctx.http.send_files(msg.channel_id.0,vec![(&file, "icon.png")], serde_json::Map::new())?;
+    ctx.http.send_files(
+        msg.channel_id.0,
+        vec![(&file, "icon.png")],
+        serde_json::Map::new(),
+    )?;
 
     msg.reply(ctx, content)?;
 

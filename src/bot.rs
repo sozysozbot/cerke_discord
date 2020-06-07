@@ -5,7 +5,6 @@ pub enum Status {
     StandingBy,
 }
 
-
 use render_cerke_board::*;
 
 lazy_static! {
