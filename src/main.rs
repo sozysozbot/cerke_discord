@@ -108,6 +108,8 @@ fn parse_coord(coord: &str) -> Option<(Row, Column)> {
     Some((row, column))
 }
 
+use serenity::framework::standard::CommandError;
+
 #[command]
 fn mov(ctx: &mut Context, msg: &Message) -> CommandResult {
     let input: Vec<&str> = msg.content.split_whitespace().collect();
@@ -119,7 +121,7 @@ fn mov(ctx: &mut Context, msg: &Message) -> CommandResult {
                 input.len() - 1
             ),
         )?;
-        return Ok(());
+        return Err(CommandError("foo".to_string()));
     }
 
     let src = match parse_coord(input[1]) {
@@ -131,7 +133,7 @@ fn mov(ctx: &mut Context, msg: &Message) -> CommandResult {
                     input[1]
                 ),
             )?;
-            return Ok(());
+            return Err(CommandError("bar".to_string()));
         }
         Some(coord) => coord,
     };
