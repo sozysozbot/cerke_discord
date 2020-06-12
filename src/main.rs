@@ -12,7 +12,7 @@ use serenity::prelude::{Context, EventHandler};
 pub mod bot;
 
 #[group]
-#[commands(ping, log, initiate, mov, show)]
+#[commands(ping, log, initiate, mov, show, capture)]
 struct General;
 
 use std::env;
@@ -135,6 +135,41 @@ fn if_none_report_error<T>(
         }
         Some(k) => Ok(k),
     }
+}
+
+
+#[command]
+fn capture(ctx: &mut Context, msg: &Message) -> CommandResult {
+    let input: Vec<&str> = msg.content.split_whitespace().collect();
+    use boolinator::Boolinator;
+    if_none_report_error(
+        ctx,
+        msg,
+        (input.len() >= 2).as_some(()),
+        &format!(
+            "Not enough arguments. Expected: 1, got: {}",
+            input.len() - 1
+        ),
+    )?;
+
+    let src = if_none_report_error(
+        ctx,
+        msg,
+        parse_coord(input[1]),
+        &format!(
+            "The first argument is incorrect. Expected a coordinate, got: {}",
+            input[1]
+        ),
+    )?;
+
+    println!("capturing; src: {:?}", src);
+
+    {
+        let mut field = bot::FIELD.lock().unwrap();
+        scold_operation_error(ctx, msg, field.move_to_opponent_hop1zuo1(src))?;
+    }
+    
+    render_current(ctx, msg)
 }
 
 #[command]
