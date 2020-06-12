@@ -12,7 +12,7 @@ use serenity::prelude::{Context, EventHandler};
 pub mod bot;
 
 #[group]
-#[commands(ping, log, initiate, mov)]
+#[commands(ping, log, initiate, mov, show)]
 struct General;
 
 use std::env;
@@ -49,15 +49,18 @@ use render_cerke_board::*;
 use std::fs::File;
 
 #[command]
-fn initiate(ctx: &mut Context, msg: &Message) -> CommandResult {
+fn show(ctx: &mut Context, msg: &Message) -> CommandResult {
+    render_current(ctx, msg)
+}
+
+fn render_current(ctx:  &mut Context, msg: &Message) -> CommandResult {
     let map = serde_json::json!({
         "content": "Loading...",
         "tts": false,
     });
     ctx.http.send_message(msg.channel_id.0, &map)?;
 
-    let mut field = bot::FIELD.lock().unwrap();
-    *field = Field::new();
+    let field = bot::FIELD.lock().unwrap();
 
     field.render(Side::IASide).save("iaside.png").unwrap();
     field.render(Side::ASide).save("aside.png").unwrap();
@@ -71,6 +74,15 @@ fn initiate(ctx: &mut Context, msg: &Message) -> CommandResult {
         serde_json::Map::new(),
     )?;
     Ok(())
+}
+
+#[command]
+fn initiate(ctx: &mut Context, msg: &Message) -> CommandResult {
+    {
+        let mut field = bot::FIELD.lock().unwrap();
+        *field = Field::new();
+    }
+    render_current(ctx, msg)
 }
 
 fn parse_coord(coord: &str) -> Option<(Row, Column)> {
@@ -161,28 +173,12 @@ fn mov(ctx: &mut Context, msg: &Message) -> CommandResult {
 
     println!("moving; src: {:?},  dst: {:?}", src, dst);
 
-    let map = serde_json::json!({
-        "content": "Loading...",
-        "tts": false,
-    });
-    ctx.http.send_message(msg.channel_id.0, &map)?;
-
-    let mut field = bot::FIELD.lock().unwrap();
-    scold_operation_error(ctx, msg, field.move_to_empty_square(dst, src))?;
-
-    field.render(Side::IASide).save("iaside.png").unwrap();
-    field.render(Side::ASide).save("aside.png").unwrap();
-
-    let iaside = File::open("./iaside.png")?;
-    let aside = File::open("./aside.png")?;
-
-    ctx.http.send_files(
-        msg.channel_id.0,
-        vec![(&iaside, "iaside.png"), (&aside, "aside.png")],
-        serde_json::Map::new(),
-    )?;
-
-    Ok(())
+    {
+        let mut field = bot::FIELD.lock().unwrap();
+        scold_operation_error(ctx, msg, field.move_to_empty_square(dst, src))?;
+    }
+    
+    render_current(ctx, msg)
 }
 
 fn scold_operation_error(
