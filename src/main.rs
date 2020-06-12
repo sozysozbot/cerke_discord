@@ -128,16 +128,16 @@ fn if_none_report_error<T>(
 #[command]
 fn mov(ctx: &mut Context, msg: &Message) -> CommandResult {
     let input: Vec<&str> = msg.content.split_whitespace().collect();
-    if input.len() < 3 {
-        msg.channel_id.say(
-            &ctx.http,
-            format!(
-                "Not enough arguments. Expected: 2, got: {}",
-                input.len() - 1
-            ),
-        )?;
-        return Err(CommandError("foo".to_string()));
-    }
+    use boolinator::Boolinator;
+    if_none_report_error(
+        ctx,
+        msg,
+        (input.len() >= 3).as_some(()),
+        &format!(
+            "Not enough arguments. Expected: 2, got: {}",
+            input.len() - 1
+        ),
+    )?;
 
     let src = if_none_report_error(
         ctx,
@@ -168,27 +168,36 @@ fn mov(ctx: &mut Context, msg: &Message) -> CommandResult {
     ctx.http.send_message(msg.channel_id.0, &map)?;
 
     let mut field = bot::FIELD.lock().unwrap();
-    match field.move_to_empty_square(dst, src) {
-        Ok(()) => {
-            field.render(Side::IASide).save("iaside.png").unwrap();
-            field.render(Side::ASide).save("aside.png").unwrap();
+    scold_operation_error(ctx, msg, field.move_to_empty_square(dst, src))?;
 
-            let iaside = File::open("./iaside.png")?;
-            let aside = File::open("./aside.png")?;
+    field.render(Side::IASide).save("iaside.png").unwrap();
+    field.render(Side::ASide).save("aside.png").unwrap();
 
-            ctx.http.send_files(
-                msg.channel_id.0,
-                vec![(&iaside, "iaside.png"), (&aside, "aside.png")],
-                serde_json::Map::new(),
-            )?;
-        }
-        Err(x) => {
-            msg.channel_id
-                .say(&ctx.http, format!("Invalid move. Reason: {:?}", x))?;
-        }
-    }
+    let iaside = File::open("./iaside.png")?;
+    let aside = File::open("./aside.png")?;
+
+    ctx.http.send_files(
+        msg.channel_id.0,
+        vec![(&iaside, "iaside.png"), (&aside, "aside.png")],
+        serde_json::Map::new(),
+    )?;
 
     Ok(())
+}
+
+fn scold_operation_error(
+    ctx: &mut Context,
+    msg: &Message,
+    a: Result<(), OperationError>,
+) -> Result<(), CommandError> {
+    match a {
+        Err(x) => {
+            let report = format!("Invalid move. Reason: {:?}", x);
+            msg.channel_id.say(&ctx.http, &report)?;
+            Err(CommandError(report.to_string()))
+        }
+        Ok(()) => Ok(()),
+    }
 }
 
 #[command]
