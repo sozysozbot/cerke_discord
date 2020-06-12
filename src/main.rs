@@ -110,6 +110,21 @@ fn parse_coord(coord: &str) -> Option<(Row, Column)> {
 
 use serenity::framework::standard::CommandError;
 
+fn if_none_report_error<T>(
+    ctx: &mut Context,
+    msg: &Message,
+    a: Option<T>,
+    report: &str,
+) -> Result<T, CommandError> {
+    match a {
+        None => {
+            msg.channel_id.say(&ctx.http, report)?;
+            return Err(CommandError(report.to_string()));
+        }
+        Some(k) => Ok(k),
+    }
+}
+
 #[command]
 fn mov(ctx: &mut Context, msg: &Message) -> CommandResult {
     let input: Vec<&str> = msg.content.split_whitespace().collect();
@@ -124,33 +139,25 @@ fn mov(ctx: &mut Context, msg: &Message) -> CommandResult {
         return Err(CommandError("foo".to_string()));
     }
 
-    let src = match parse_coord(input[1]) {
-        None => {
-            msg.channel_id.say(
-                &ctx.http,
-                format!(
-                    "The first argument is incorrect. Expected a coordinate, got: {}",
-                    input[1]
-                ),
-            )?;
-            return Err(CommandError("bar".to_string()));
-        }
-        Some(coord) => coord,
-    };
+    let src = if_none_report_error(
+        ctx,
+        msg,
+        parse_coord(input[1]),
+        &format!(
+            "The first argument is incorrect. Expected a coordinate, got: {}",
+            input[1]
+        ),
+    )?;
 
-    let dst = match parse_coord(input[2]) {
-        None => {
-            msg.channel_id.say(
-                &ctx.http,
-                format!(
-                    "The second argument is incorrect. Expected a coordinate, got: {}",
-                    input[2]
-                ),
-            )?;
-            return Ok(());
-        }
-        Some(coord) => coord,
-    };
+    let dst = if_none_report_error(
+        ctx,
+        msg,
+        parse_coord(input[2]),
+        &format!(
+            "The second argument is incorrect. Expected a coordinate, got: {}",
+            input[2]
+        ),
+    )?;
 
     println!("moving; src: {:?},  dst: {:?}", src, dst);
 
