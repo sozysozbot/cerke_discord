@@ -12,7 +12,7 @@ use serenity::prelude::{Context, EventHandler};
 pub mod bot;
 
 #[group]
-#[commands(ping, log, initiate, mov, show, capture)]
+#[commands(ping, log, initiate, mov, show, capture, stepup)]
 struct General;
 
 use std::env;
@@ -160,6 +160,42 @@ fn expect_how_many(
     )?;
 
     Ok(input)
+}
+
+#[command]
+fn stepup(ctx: &mut Context, msg: &Message) -> CommandResult {
+    let input = expect_how_many(ctx, msg, 1)?;
+    let src = if_none_report_error(
+        ctx,
+        msg,
+        parse_coord(&input[1]),
+        &format!(
+            "The first argument is incorrect. Expected a coordinate, got: {}",
+            input[1]
+        ),
+    )?;
+
+    let dst = if_none_report_error(
+        ctx,
+        msg,
+        parse_coord(&input[2]),
+        &format!(
+            "The second argument is incorrect. Expected a coordinate, got: {}",
+            input[2]
+        ),
+    )?;
+
+    println!(
+        "moving from the src {:?} and stepping the dst {:?}",
+        src, dst
+    );
+
+    {
+        let mut field = bot::FIELD.lock().unwrap();
+        scold_operation_error(ctx, msg, field.move_to_opponent_hop1zuo1(src))?;
+    }
+
+    render_current(ctx, msg)
 }
 
 #[command]
