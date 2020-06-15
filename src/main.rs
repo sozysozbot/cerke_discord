@@ -12,7 +12,7 @@ use serenity::prelude::{Context, EventHandler};
 pub mod bot;
 
 #[group]
-#[commands(ping, log, initiate, mov, show, capture, stepup)]
+#[commands(ping, log, initiate, mov, show, capture, stepup, stepdown)]
 struct General;
 
 use std::env;
@@ -163,8 +163,32 @@ fn expect_how_many(
 }
 
 #[command]
-fn stepup(ctx: &mut Context, msg: &Message) -> CommandResult {
+fn stepdown(ctx: &mut Context, msg: &Message) -> CommandResult {
     let input = expect_how_many(ctx, msg, 1)?;
+
+    let dst = if_none_report_error(
+        ctx,
+        msg,
+        parse_coord(&input[2]),
+        &format!(
+            "The second argument is incorrect. Expected a coordinate, got: {}",
+            input[2]
+        ),
+    )?;
+
+    println!("stepping down and reaching the dst {:?}", dst);
+
+    {
+        let mut field = bot::FIELD.lock().unwrap();
+        scold_operation_error(ctx, msg, field.descend_from_stepping(dst))?;
+    }
+
+    render_current(ctx, msg)
+}
+
+#[command]
+fn stepup(ctx: &mut Context, msg: &Message) -> CommandResult {
+    let input = expect_how_many(ctx, msg, 2)?;
     let src = if_none_report_error(
         ctx,
         msg,
@@ -192,7 +216,7 @@ fn stepup(ctx: &mut Context, msg: &Message) -> CommandResult {
 
     {
         let mut field = bot::FIELD.lock().unwrap();
-        scold_operation_error(ctx, msg, field.move_to_opponent_hop1zuo1(src))?;
+        scold_operation_error(ctx, msg, field.step_on_occupied(dst, src))?;
     }
 
     render_current(ctx, msg)
