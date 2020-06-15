@@ -53,7 +53,7 @@ fn show(ctx: &mut Context, msg: &Message) -> CommandResult {
     render_current(ctx, msg)
 }
 
-fn render_current(ctx:  &mut Context, msg: &Message) -> CommandResult {
+fn render_current(ctx: &mut Context, msg: &Message) -> CommandResult {
     let map = serde_json::json!({
         "content": "Loading...",
         "tts": false,
@@ -137,25 +137,38 @@ fn if_none_report_error<T>(
     }
 }
 
-
-#[command]
-fn capture(ctx: &mut Context, msg: &Message) -> CommandResult {
-    let input: Vec<&str> = msg.content.split_whitespace().collect();
+fn expect_how_many(
+    ctx: &mut Context,
+    msg: &Message,
+    howmany_expected: usize,
+) -> Result<Vec<String>, CommandError> {
+    let input: Vec<String> = msg
+        .content
+        .split_whitespace()
+        .map(|s| s.to_string())
+        .collect();
     use boolinator::Boolinator;
     if_none_report_error(
         ctx,
         msg,
-        (input.len() >= 2).as_some(()),
+        (input.len() >= howmany_expected + 1).as_some(()),
         &format!(
-            "Not enough arguments. Expected: 1, got: {}",
+            "Not enough arguments. Expected: {}, got: {}",
+            howmany_expected,
             input.len() - 1
         ),
     )?;
 
+    Ok(input)
+}
+
+#[command]
+fn capture(ctx: &mut Context, msg: &Message) -> CommandResult {
+    let input = expect_how_many(ctx, msg, 1)?;
     let src = if_none_report_error(
         ctx,
         msg,
-        parse_coord(input[1]),
+        parse_coord(&input[1]),
         &format!(
             "The first argument is incorrect. Expected a coordinate, got: {}",
             input[1]
@@ -168,28 +181,17 @@ fn capture(ctx: &mut Context, msg: &Message) -> CommandResult {
         let mut field = bot::FIELD.lock().unwrap();
         scold_operation_error(ctx, msg, field.move_to_opponent_hop1zuo1(src))?;
     }
-    
+
     render_current(ctx, msg)
 }
 
 #[command]
 fn mov(ctx: &mut Context, msg: &Message) -> CommandResult {
-    let input: Vec<&str> = msg.content.split_whitespace().collect();
-    use boolinator::Boolinator;
-    if_none_report_error(
-        ctx,
-        msg,
-        (input.len() >= 3).as_some(()),
-        &format!(
-            "Not enough arguments. Expected: 2, got: {}",
-            input.len() - 1
-        ),
-    )?;
-
+    let input = expect_how_many(ctx, msg, 2)?;
     let src = if_none_report_error(
         ctx,
         msg,
-        parse_coord(input[1]),
+        parse_coord(&input[1]),
         &format!(
             "The first argument is incorrect. Expected a coordinate, got: {}",
             input[1]
@@ -199,7 +201,7 @@ fn mov(ctx: &mut Context, msg: &Message) -> CommandResult {
     let dst = if_none_report_error(
         ctx,
         msg,
-        parse_coord(input[2]),
+        parse_coord(&input[2]),
         &format!(
             "The second argument is incorrect. Expected a coordinate, got: {}",
             input[2]
@@ -212,7 +214,7 @@ fn mov(ctx: &mut Context, msg: &Message) -> CommandResult {
         let mut field = bot::FIELD.lock().unwrap();
         scold_operation_error(ctx, msg, field.move_to_empty_square(dst, src))?;
     }
-    
+
     render_current(ctx, msg)
 }
 
