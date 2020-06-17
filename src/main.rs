@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic)]
+
 #[macro_use]
 extern crate lazy_static;
 
@@ -45,7 +47,7 @@ fn log(ctx: &mut Context, msg: &Message) -> CommandResult {
     Ok(())
 }
 
-use render_cerke_board::*;
+use render_cerke_board::{Column, Field, OperationError, Row, Side};
 use std::fs::File;
 
 #[command]
@@ -65,12 +67,12 @@ fn render_current(ctx: &mut Context, msg: &Message) -> CommandResult {
     field.render(Side::IASide).save("iaside.png").unwrap();
     field.render(Side::ASide).save("aside.png").unwrap();
 
-    let iaside = File::open("./iaside.png")?;
-    let aside = File::open("./aside.png")?;
+    let side_ia = File::open("./iaside.png")?;
+    let side_a_ = File::open("./aside.png")?;
 
     ctx.http.send_files(
         msg.channel_id.0,
-        vec![(&iaside, "iaside.png"), (&aside, "aside.png")],
+        vec![(&side_ia, "iaside.png"), (&side_a_, "aside.png")],
         serde_json::Map::new(),
     )?;
     Ok(())
@@ -91,7 +93,6 @@ fn parse_coord(coord: &str) -> Option<(Row, Column)> {
     }
 
     let column = match coord.chars().next() {
-        None => None, // early return
         Some('C') => Some(Column::C),
         Some('K') => Some(Column::K),
         Some('L') => Some(Column::L),
@@ -101,7 +102,7 @@ fn parse_coord(coord: &str) -> Option<(Row, Column)> {
         Some('T') => Some(Column::T),
         Some('X') => Some(Column::X),
         Some('Z') => Some(Column::Z),
-        Some(_) => None,
+        None | Some(_) => None,
     }?;
 
     let row = match &coord[1..coord.len()] {
@@ -131,7 +132,7 @@ fn if_none_report_error<T>(
     match a {
         None => {
             msg.channel_id.say(&ctx.http, report)?;
-            return Err(CommandError(report.to_string()));
+            Err(CommandError(report.to_string()))
         }
         Some(k) => Ok(k),
     }
@@ -142,16 +143,17 @@ fn expect_how_many(
     msg: &Message,
     howmany_expected: usize,
 ) -> Result<Vec<String>, CommandError> {
+    use boolinator::Boolinator;
+
     let input: Vec<String> = msg
         .content
         .split_whitespace()
-        .map(|s| s.to_string())
+        .map(std::string::ToString::to_string)
         .collect();
-    use boolinator::Boolinator;
     if_none_report_error(
         ctx,
         msg,
-        (input.len() >= howmany_expected + 1).as_some(()),
+        (input.len() > howmany_expected).as_some(()),
         &format!(
             "Not enough arguments. Expected: {}, got: {}",
             howmany_expected,
@@ -287,7 +289,7 @@ fn scold_operation_error(
         Err(x) => {
             let report = format!("Invalid move. Reason: {:?}", x);
             msg.channel_id.say(&ctx.http, &report)?;
-            Err(CommandError(report.to_string()))
+            Err(CommandError(report))
         }
         Ok(()) => Ok(()),
     }

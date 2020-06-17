@@ -5,7 +5,7 @@ pub enum Status {
     StandingBy,
 }
 
-use render_cerke_board::*;
+use render_cerke_board::Field;
 
 lazy_static! {
     pub static ref STATUS: Arc<Mutex<Status>> = Arc::new(Mutex::new(Status::StandingBy));
