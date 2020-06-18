@@ -47,7 +47,7 @@ fn log(ctx: &mut Context, msg: &Message) -> CommandResult {
     Ok(())
 }
 
-use render_cerke_board::{Column, Field, OperationError, Row, Side};
+use render_cerke_board::{Color, Column, Field, OperationError, Profession, Row, Side};
 use std::fs::File;
 
 #[command]
@@ -85,6 +85,39 @@ fn initiate(ctx: &mut Context, msg: &Message) -> CommandResult {
         *field = Field::new();
     }
     render_current(ctx, msg)
+}
+
+fn parse_profession(s: &str) -> Option<Profession> {
+    let s = s.to_lowercase();
+    match &*s {
+        "vessel" | "船" | "felkana" | "nuak1" => Some(Profession::Nuak1),
+        "pawn" | "兵" | "elmer" | "kauk2" => Some(Profession::Kauk2),
+        "rook" | "弓" | "gustuer" | "gua2" => Some(Profession::Gua2),
+        "bishop" | "車" | "vadyrd" | "kaun1" => Some(Profession::Kaun1),
+        "tiger" | "虎" | "stistyst" | "dau2" => Some(Profession::Dau2),
+        "horse" | "馬" | "dodor" | "maun1" => Some(Profession::Maun1),
+        "clerk" | "筆" | "kua" | "kua2" => Some(Profession::Kua2),
+        "shaman" | "巫" | "terlsk" | "tuk2" => Some(Profession::Tuk2),
+        "general" | "将" | "varxle" | "uai1" => Some(Profession::Uai1),
+        "king" | "王" | "ales" | "io" => Some(Profession::Io),
+        _ => None,
+    }
+}
+
+fn parse_side(s: &str) -> Option<Side> {
+    match s {
+        "A" => Some(Side::ASide),
+        "IA" => Some(Side::IASide),
+        _ => None,
+    }
+}
+
+fn parse_color(s: &str) -> Option<Color> {
+    match s {
+        "red" | "赤" | "kok1" => Some(Color::Kok1),
+        "black" | "黒" | "Huok2" => Some(Color::Huok2),
+        _ => None,
+    }
 }
 
 fn parse_coord(coord: &str) -> Option<(Row, Column)> {
@@ -162,6 +195,59 @@ fn expect_at_least_how_many(
     )?;
 
     Ok(input)
+}
+
+#[command]
+fn parachute(ctx: &mut Context, msg: &Message) -> CommandResult {
+    let input = expect_at_least_how_many(ctx, msg, 1)?;
+
+    let dst = if_none_report_error(
+        ctx,
+        msg,
+        parse_coord(&input[1]),
+        &format!(
+            "The first argument is incorrect. Expected a coordinate, got: {}",
+            input[1]
+        ),
+    )?;
+
+    let mut opt_prof = None;
+    let mut opt_color = None;
+    let mut opt_side = None;
+
+    for s in input.iter().skip(2) {
+        if let Some(p) = parse_profession(s) {
+            if let Some(old_p) = opt_prof {
+                if p != old_p {
+                    if_none_report_error(ctx, msg, None, &format!("conflicting profession info: {:?} and {:?}", old_p, p))?;
+                }
+            } else {
+                opt_prof = Some(p);
+            }
+        } else if let Some(c) = parse_color(s) {
+            if let Some(old_c) = opt_color {
+                if c != old_c {
+                    if_none_report_error(ctx, msg, None, &format!("conflicting color info: {:?} and {:?}", old_c, c))?;
+                }
+            } else {
+                opt_color = Some(c);
+            }
+        } else if let Some(si) = parse_side(s) {
+            if let Some(old_si) = opt_side {
+                if si != old_si {
+                    if_none_report_error(ctx, msg, None, &format!("conflicting side info: {:?} and {:?}", old_si, si))?;
+                }
+            } else {
+                opt_side = Some(si);
+            }
+        } else {
+            if_none_report_error(ctx, msg, None, &format!("unrecognizable option: {}", s))?;
+        }
+    }
+
+    unimplemented!();
+
+    Ok(())
 }
 
 #[command]
