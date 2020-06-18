@@ -138,7 +138,7 @@ fn if_none_report_error<T>(
     }
 }
 
-fn expect_how_many(
+fn expect_at_least_how_many(
     ctx: &mut Context,
     msg: &Message,
     howmany_expected: usize,
@@ -166,15 +166,15 @@ fn expect_how_many(
 
 #[command]
 fn stepdown(ctx: &mut Context, msg: &Message) -> CommandResult {
-    let input = expect_how_many(ctx, msg, 1)?;
+    let input = expect_at_least_how_many(ctx, msg, 1)?;
 
     let dst = if_none_report_error(
         ctx,
         msg,
-        parse_coord(&input[2]),
+        parse_coord(&input[1]),
         &format!(
-            "The second argument is incorrect. Expected a coordinate, got: {}",
-            input[2]
+            "The first argument is incorrect. Expected a coordinate, got: {}",
+            input[1]
         ),
     )?;
 
@@ -190,7 +190,7 @@ fn stepdown(ctx: &mut Context, msg: &Message) -> CommandResult {
 
 #[command]
 fn stepup(ctx: &mut Context, msg: &Message) -> CommandResult {
-    let input = expect_how_many(ctx, msg, 2)?;
+    let input = expect_at_least_how_many(ctx, msg, 2)?;
     let src = if_none_report_error(
         ctx,
         msg,
@@ -226,7 +226,7 @@ fn stepup(ctx: &mut Context, msg: &Message) -> CommandResult {
 
 #[command]
 fn capture(ctx: &mut Context, msg: &Message) -> CommandResult {
-    let input = expect_how_many(ctx, msg, 1)?;
+    let input = expect_at_least_how_many(ctx, msg, 1)?;
     let src = if_none_report_error(
         ctx,
         msg,
@@ -249,7 +249,7 @@ fn capture(ctx: &mut Context, msg: &Message) -> CommandResult {
 
 #[command]
 fn mov(ctx: &mut Context, msg: &Message) -> CommandResult {
-    let input = expect_how_many(ctx, msg, 2)?;
+    let input = expect_at_least_how_many(ctx, msg, 2)?;
     let src = if_none_report_error(
         ctx,
         msg,
