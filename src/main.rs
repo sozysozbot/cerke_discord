@@ -1,4 +1,5 @@
 #![warn(clippy::pedantic)]
+#![allow(clippy::non_ascii_literal)]
 
 #[macro_use]
 extern crate lazy_static;
@@ -14,7 +15,7 @@ use serenity::prelude::{Context, EventHandler};
 pub mod bot;
 
 #[group]
-#[commands(ping, log, initiate, mov, show, capture, stepup, stepdown)]
+#[commands(ping, log, initiate, mov, show, capture, stepup, stepdown, parachute)]
 struct General;
 
 use std::env;
@@ -156,6 +157,11 @@ fn parse_coord(coord: &str) -> Option<(Row, Column)> {
 
 use serenity::framework::standard::CommandError;
 
+fn report_error<T>(ctx: &mut Context, msg: &Message, report: &str) -> Result<T, CommandError> {
+    msg.channel_id.say(&ctx.http, report)?;
+    Err(CommandError(report.to_string()))
+}
+
 fn if_none_report_error<T>(
     ctx: &mut Context,
     msg: &Message,
@@ -163,10 +169,7 @@ fn if_none_report_error<T>(
     report: &str,
 ) -> Result<T, CommandError> {
     match a {
-        None => {
-            msg.channel_id.say(&ctx.http, report)?;
-            Err(CommandError(report.to_string()))
-        }
+        None => report_error(ctx, msg, report),
         Some(k) => Ok(k),
     }
 }
@@ -219,7 +222,11 @@ fn parachute(ctx: &mut Context, msg: &Message) -> CommandResult {
         if let Some(p) = parse_profession(s) {
             if let Some(old_p) = opt_prof {
                 if p != old_p {
-                    if_none_report_error(ctx, msg, None, &format!("conflicting profession info: {:?} and {:?}", old_p, p))?;
+                    report_error(
+                        ctx,
+                        msg,
+                        &format!("conflicting profession info: {:?} and {:?}", old_p, p),
+                    )?;
                 }
             } else {
                 opt_prof = Some(p);
@@ -227,7 +234,11 @@ fn parachute(ctx: &mut Context, msg: &Message) -> CommandResult {
         } else if let Some(c) = parse_color(s) {
             if let Some(old_c) = opt_color {
                 if c != old_c {
-                    if_none_report_error(ctx, msg, None, &format!("conflicting color info: {:?} and {:?}", old_c, c))?;
+                    report_error(
+                        ctx,
+                        msg,
+                        &format!("conflicting color info: {:?} and {:?}", old_c, c),
+                    )?;
                 }
             } else {
                 opt_color = Some(c);
@@ -235,19 +246,123 @@ fn parachute(ctx: &mut Context, msg: &Message) -> CommandResult {
         } else if let Some(si) = parse_side(s) {
             if let Some(old_si) = opt_side {
                 if si != old_si {
-                    if_none_report_error(ctx, msg, None, &format!("conflicting side info: {:?} and {:?}", old_si, si))?;
+                    report_error(
+                        ctx,
+                        msg,
+                        &format!("conflicting side info: {:?} and {:?}", old_si, si),
+                    )?;
                 }
             } else {
                 opt_side = Some(si);
             }
         } else {
-            if_none_report_error(ctx, msg, None, &format!("unrecognizable option: {}", s))?;
+            report_error(ctx, msg, &format!("unrecognizable option: {}", s))?;
         }
     }
 
-    unimplemented!();
+    {
+        let mut field = bot::FIELD.lock().unwrap();
+        let lf = field.to_logical();
 
-    Ok(())
+        let (side, color, profession) = {
+            if lf.ia_side_hop1zuo1.is_empty() && lf.a_side_hop1zuo1.is_empty() {
+                report_error(ctx, msg, "No piece found in either sides' hop1zuo1")?;
+            }
+            if let (Some(s), Some(c), Some(p)) = (opt_side, opt_color, opt_prof) {
+                // If all filled, trust them
+                (s, c, p)
+            } else if lf.a_side_hop1zuo1.is_empty() || opt_side == Some(Side::IASide) {
+                // must be ia_side
+                if lf.ia_side_hop1zuo1.is_empty() {
+                    report_error(ctx, msg, "No piece found in IASides' hop1zuo1")?;
+                }
+
+                let candidates: Vec<_> = lf
+                    .ia_side_hop1zuo1
+                    .iter()
+                    .filter(|pi| matcher(pi.color, opt_color) && matcher(pi.profession, opt_prof))
+                    .collect();
+
+                let (c,p) = match &candidates[..] {
+                    [] => report_error(ctx, msg, "No piece in IASide's hop1zuo1 matches the description")?,
+                    [pi] => (pi.color, pi.profession),
+                    [pi, ..] => if is_all_same(&candidates) { (pi.color, pi.profession) } else {
+                        report_error(ctx, msg, "Not enough info to identify the piece. Add color/profession and try again")?
+                    }
+                };
+
+                (Side::IASide, c, p)
+            } else if lf.ia_side_hop1zuo1.is_empty() || opt_side == Some(Side::ASide) {
+                // must be a_side
+                if lf.a_side_hop1zuo1.is_empty() {
+                    report_error(ctx, msg, "No piece found in ASides' hop1zuo1")?;
+                }
+
+                let candidates: Vec<_> = lf
+                .a_side_hop1zuo1
+                .iter()
+                .filter(|pi| matcher(pi.color, opt_color) && matcher(pi.profession, opt_prof))
+                .collect();
+
+                let (c, p) = match &candidates[..] {
+                    [] => report_error(ctx, msg, "No piece in ASide's hop1zuo1 matches the description")?,
+                    [pi] => (pi.color, pi.profession),
+                    [pi, ..] => if is_all_same(&candidates) { (pi.color, pi.profession) } else {
+                        report_error(ctx, msg, "Not enough info to identify the piece. Add color/profession and try again")?
+                    }
+                };
+
+                (Side::ASide, c, p)
+            } else {
+                // Neither is empty. Gotta search from both.
+
+                let mut candidates1: Vec<_> = lf.a_side_hop1zuo1.iter()
+                .filter_map(|pi| if matcher(pi.color, opt_color) && matcher(pi.profession, opt_prof) {
+                    Some((Side::ASide, pi))
+                } else {
+                    None
+                })
+                .collect();
+
+                let candidates2: Vec<_> = lf.ia_side_hop1zuo1.iter()
+                .filter_map(|pi| if matcher(pi.color, opt_color) && matcher(pi.profession, opt_prof) {
+                    Some((Side::IASide, pi))
+                } else {
+                    None
+                })
+                .collect();
+
+                candidates1.extend(candidates2);
+
+                match &candidates1[..] {
+                    [] => report_error(ctx, msg, "No piece in hop1zuo1 matches the description")?,
+                    [(s, pi)] => (*s, pi.color, pi.profession),
+                    [(s, pi), ..] => if is_all_same(&candidates1) { (*s, pi.color, pi.profession) } else {
+                        report_error(ctx, msg, "Not enough info to identify the piece. Add side/color/profession and try again")?
+                    }
+                }
+            }
+        };
+
+        println!(
+            "parachute: dst {:?}, side: {:?}, color: {:?}, prof: {:?}",
+            dst, side, color, profession
+        );
+        scold_operation_error(ctx, msg, field.from_hop1zuo1(dst, side, color, profession))?;
+    }
+
+    render_current(ctx, msg)
+}
+
+fn is_all_same<T: PartialEq>(arr: &[T]) -> bool {
+    arr.windows(2).all(|w| w[0] == w[1])
+}
+
+fn matcher<T: Eq + Copy>(a: T, b: Option<T>) -> bool {
+    match b {
+        None => true,
+        Some(x) => x == a,
+    }
 }
 
 #[command]
