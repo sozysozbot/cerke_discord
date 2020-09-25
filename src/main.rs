@@ -48,7 +48,9 @@ fn log(ctx: &mut Context, msg: &Message) -> CommandResult {
     Ok(())
 }
 
-use render_cerke_board::{Color, Column, Field, OperationError, Profession, Row, Side};
+use cetkaik_core::absolute::{parse_coord, Side};
+use cetkaik_core::{Color, Profession};
+use render_cerke_board::{Field, OperationError};
 use std::fs::File;
 
 #[command]
@@ -86,73 +88,6 @@ fn initiate(ctx: &mut Context, msg: &Message) -> CommandResult {
         *field = Field::new();
     }
     render_current(ctx, msg)
-}
-
-fn parse_profession(s: &str) -> Option<Profession> {
-    let s = s.to_lowercase();
-    match &*s {
-        "vessel" | "船" | "felkana" | "nuak1" => Some(Profession::Nuak1),
-        "pawn" | "兵" | "elmer" | "kauk2" => Some(Profession::Kauk2),
-        "rook" | "弓" | "gustuer" | "gua2" => Some(Profession::Gua2),
-        "bishop" | "車" | "vadyrd" | "kaun1" => Some(Profession::Kaun1),
-        "tiger" | "虎" | "stistyst" | "dau2" => Some(Profession::Dau2),
-        "horse" | "馬" | "dodor" | "maun1" => Some(Profession::Maun1),
-        "clerk" | "筆" | "kua" | "kua2" => Some(Profession::Kua2),
-        "shaman" | "巫" | "terlsk" | "tuk2" => Some(Profession::Tuk2),
-        "general" | "将" | "varxle" | "uai1" => Some(Profession::Uai1),
-        "king" | "王" | "ales" | "io" => Some(Profession::Io),
-        _ => None,
-    }
-}
-
-fn parse_side(s: &str) -> Option<Side> {
-    match s {
-        "A" => Some(Side::ASide),
-        "IA" => Some(Side::IASide),
-        _ => None,
-    }
-}
-
-fn parse_color(s: &str) -> Option<Color> {
-    match s {
-        "red" | "赤" | "kok1" => Some(Color::Kok1),
-        "black" | "黒" | "Huok2" => Some(Color::Huok2),
-        _ => None,
-    }
-}
-
-fn parse_coord(coord: &str) -> Option<(Row, Column)> {
-    if coord.is_empty() || coord.len() > 3 {
-        return None;
-    }
-
-    let column = match coord.chars().next() {
-        Some('C') => Some(Column::C),
-        Some('K') => Some(Column::K),
-        Some('L') => Some(Column::L),
-        Some('M') => Some(Column::M),
-        Some('N') => Some(Column::N),
-        Some('P') => Some(Column::P),
-        Some('T') => Some(Column::T),
-        Some('X') => Some(Column::X),
-        Some('Z') => Some(Column::Z),
-        None | Some(_) => None,
-    }?;
-
-    let row = match &coord[1..coord.len()] {
-        "A" => Some(Row::A),
-        "AI" => Some(Row::AI),
-        "AU" => Some(Row::AU),
-        "E" => Some(Row::E),
-        "I" => Some(Row::I),
-        "O" => Some(Row::O),
-        "U" => Some(Row::U),
-        "Y" => Some(Row::Y),
-        "IA" => Some(Row::IA),
-        _ => None,
-    }?;
-
-    Some((row, column))
 }
 
 use serenity::framework::standard::CommandError;
@@ -219,7 +154,7 @@ fn parachute(ctx: &mut Context, msg: &Message) -> CommandResult {
     let mut opt_side = None;
 
     for s in input.iter().skip(2) {
-        if let Some(p) = parse_profession(s) {
+        if let Ok(p) = s.parse::<Profession>() {
             if let Some(old_p) = opt_prof {
                 if p != old_p {
                     report_error(
@@ -231,7 +166,7 @@ fn parachute(ctx: &mut Context, msg: &Message) -> CommandResult {
             } else {
                 opt_prof = Some(p);
             }
-        } else if let Some(c) = parse_color(s) {
+        } else if let Ok(c) = s.parse::<Color>() {
             if let Some(old_c) = opt_color {
                 if c != old_c {
                     report_error(
@@ -243,7 +178,7 @@ fn parachute(ctx: &mut Context, msg: &Message) -> CommandResult {
             } else {
                 opt_color = Some(c);
             }
-        } else if let Some(si) = parse_side(s) {
+        } else if let Ok(si) = s.parse::<Side>() {
             if let Some(old_si) = opt_side {
                 if si != old_si {
                     report_error(
@@ -283,11 +218,19 @@ fn parachute(ctx: &mut Context, msg: &Message) -> CommandResult {
                     .filter(|pi| matcher(pi.color, opt_color) && matcher(pi.profession, opt_prof))
                     .collect();
 
-                let (c,p) = match &candidates[..] {
-                    [] => report_error(ctx, msg, "No piece in IASide's hop1zuo1 matches the description")?,
+                let (c, p) = match &candidates[..] {
+                    [] => report_error(
+                        ctx,
+                        msg,
+                        "No piece in IASide's hop1zuo1 matches the description",
+                    )?,
                     [pi] => (pi.color, pi.profession),
-                    [pi, ..] => if is_all_same(&candidates) { (pi.color, pi.profession) } else {
-                        report_error(ctx, msg, "Not enough info to identify the piece. Add color/profession and try again")?
+                    [pi, ..] => {
+                        if is_all_same(&candidates) {
+                            (pi.color, pi.profession)
+                        } else {
+                            report_error(ctx, msg, "Not enough info to identify the piece. Add color/profession and try again")?
+                        }
                     }
                 };
 
@@ -299,16 +242,24 @@ fn parachute(ctx: &mut Context, msg: &Message) -> CommandResult {
                 }
 
                 let candidates: Vec<_> = lf
-                .a_side_hop1zuo1
-                .iter()
-                .filter(|pi| matcher(pi.color, opt_color) && matcher(pi.profession, opt_prof))
-                .collect();
+                    .a_side_hop1zuo1
+                    .iter()
+                    .filter(|pi| matcher(pi.color, opt_color) && matcher(pi.profession, opt_prof))
+                    .collect();
 
                 let (c, p) = match &candidates[..] {
-                    [] => report_error(ctx, msg, "No piece in ASide's hop1zuo1 matches the description")?,
+                    [] => report_error(
+                        ctx,
+                        msg,
+                        "No piece in ASide's hop1zuo1 matches the description",
+                    )?,
                     [pi] => (pi.color, pi.profession),
-                    [pi, ..] => if is_all_same(&candidates) { (pi.color, pi.profession) } else {
-                        report_error(ctx, msg, "Not enough info to identify the piece. Add color/profession and try again")?
+                    [pi, ..] => {
+                        if is_all_same(&candidates) {
+                            (pi.color, pi.profession)
+                        } else {
+                            report_error(ctx, msg, "Not enough info to identify the piece. Add color/profession and try again")?
+                        }
                     }
                 };
 
@@ -316,29 +267,41 @@ fn parachute(ctx: &mut Context, msg: &Message) -> CommandResult {
             } else {
                 // Neither is empty. Gotta search from both.
 
-                let mut candidates1: Vec<_> = lf.a_side_hop1zuo1.iter()
-                .filter_map(|pi| if matcher(pi.color, opt_color) && matcher(pi.profession, opt_prof) {
-                    Some((Side::ASide, pi))
-                } else {
-                    None
-                })
-                .collect();
+                let mut candidates1: Vec<_> = lf
+                    .a_side_hop1zuo1
+                    .iter()
+                    .filter_map(|pi| {
+                        if matcher(pi.color, opt_color) && matcher(pi.profession, opt_prof) {
+                            Some((Side::ASide, pi))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
 
-                let candidates2: Vec<_> = lf.ia_side_hop1zuo1.iter()
-                .filter_map(|pi| if matcher(pi.color, opt_color) && matcher(pi.profession, opt_prof) {
-                    Some((Side::IASide, pi))
-                } else {
-                    None
-                })
-                .collect();
+                let candidates2: Vec<_> = lf
+                    .ia_side_hop1zuo1
+                    .iter()
+                    .filter_map(|pi| {
+                        if matcher(pi.color, opt_color) && matcher(pi.profession, opt_prof) {
+                            Some((Side::IASide, pi))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
 
                 candidates1.extend(candidates2);
 
                 match &candidates1[..] {
                     [] => report_error(ctx, msg, "No piece in hop1zuo1 matches the description")?,
                     [(s, pi)] => (*s, pi.color, pi.profession),
-                    [(s, pi), ..] => if is_all_same(&candidates1) { (*s, pi.color, pi.profession) } else {
-                        report_error(ctx, msg, "Not enough info to identify the piece. Add side/color/profession and try again")?
+                    [(s, pi), ..] => {
+                        if is_all_same(&candidates1) {
+                            (*s, pi.color, pi.profession)
+                        } else {
+                            report_error(ctx, msg, "Not enough info to identify the piece. Add side/color/profession and try again")?
+                        }
                     }
                 }
             }
