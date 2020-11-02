@@ -3,14 +3,14 @@
 
 #[macro_use]
 extern crate lazy_static;
-
-use serenity::client::Client;
+use serenity::async_trait;
+use serenity::client::{Client, Context, EventHandler};
 use serenity::framework::standard::{
     macros::{command, group},
     CommandResult, StandardFramework,
 };
 use serenity::model::channel::Message;
-use serenity::prelude::{Context, EventHandler};
+use std::env;
 
 pub mod bot;
 
@@ -18,10 +18,8 @@ pub mod bot;
 #[commands(ping, log, initiate, mov, show, capture, stepup, stepdown, parachute)]
 struct General;
 
-use std::env;
-
 struct Handler;
-
+#[async_trait]
 impl EventHandler for Handler {}
 
 #[tokio::main]
