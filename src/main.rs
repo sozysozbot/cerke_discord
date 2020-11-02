@@ -200,22 +200,22 @@ fn parachute(ctx: &mut Context, msg: &Message) -> CommandResult {
         let lf = field.to_logical();
 
         let (side, color, profession) = {
-            if lf.ia_side_hop1zuo1.is_empty() && lf.a_side_hop1zuo1.is_empty() {
+            if lf.f.ia_side_hop1zuo1.is_empty() && lf.f.a_side_hop1zuo1.is_empty() {
                 report_error(ctx, msg, "No piece found in either sides' hop1zuo1")?;
             }
             if let (Some(s), Some(c), Some(p)) = (opt_side, opt_color, opt_prof) {
                 // If all filled, trust them
                 (s, c, p)
-            } else if lf.a_side_hop1zuo1.is_empty() || opt_side == Some(Side::IASide) {
+            } else if lf.f.a_side_hop1zuo1.is_empty() || opt_side == Some(Side::IASide) {
                 // must be ia_side
-                if lf.ia_side_hop1zuo1.is_empty() {
+                if lf.f.ia_side_hop1zuo1.is_empty() {
                     report_error(ctx, msg, "No piece found in IASides' hop1zuo1")?;
                 }
 
                 let candidates: Vec<_> = lf
-                    .ia_side_hop1zuo1
+                    .f.ia_side_hop1zuo1
                     .iter()
-                    .filter(|pi| matcher(pi.color, opt_color) && matcher(pi.profession, opt_prof))
+                    .filter(|pi| matcher(pi.color, opt_color) && matcher(pi.prof, opt_prof))
                     .collect();
 
                 let (c, p) = match &candidates[..] {
@@ -224,10 +224,10 @@ fn parachute(ctx: &mut Context, msg: &Message) -> CommandResult {
                         msg,
                         "No piece in IASide's hop1zuo1 matches the description",
                     )?,
-                    [pi] => (pi.color, pi.profession),
+                    [pi] => (pi.color, pi.prof),
                     [pi, ..] => {
                         if is_all_same(&candidates) {
-                            (pi.color, pi.profession)
+                            (pi.color, pi.prof)
                         } else {
                             report_error(ctx, msg, "Not enough info to identify the piece. Add color/profession and try again")?
                         }
@@ -235,16 +235,16 @@ fn parachute(ctx: &mut Context, msg: &Message) -> CommandResult {
                 };
 
                 (Side::IASide, c, p)
-            } else if lf.ia_side_hop1zuo1.is_empty() || opt_side == Some(Side::ASide) {
+            } else if lf.f.ia_side_hop1zuo1.is_empty() || opt_side == Some(Side::ASide) {
                 // must be a_side
-                if lf.a_side_hop1zuo1.is_empty() {
+                if lf.f.a_side_hop1zuo1.is_empty() {
                     report_error(ctx, msg, "No piece found in ASides' hop1zuo1")?;
                 }
 
                 let candidates: Vec<_> = lf
-                    .a_side_hop1zuo1
+                    .f.a_side_hop1zuo1
                     .iter()
-                    .filter(|pi| matcher(pi.color, opt_color) && matcher(pi.profession, opt_prof))
+                    .filter(|pi| matcher(pi.color, opt_color) && matcher(pi.prof, opt_prof))
                     .collect();
 
                 let (c, p) = match &candidates[..] {
@@ -253,10 +253,10 @@ fn parachute(ctx: &mut Context, msg: &Message) -> CommandResult {
                         msg,
                         "No piece in ASide's hop1zuo1 matches the description",
                     )?,
-                    [pi] => (pi.color, pi.profession),
+                    [pi] => (pi.color, pi.prof),
                     [pi, ..] => {
                         if is_all_same(&candidates) {
-                            (pi.color, pi.profession)
+                            (pi.color, pi.prof)
                         } else {
                             report_error(ctx, msg, "Not enough info to identify the piece. Add color/profession and try again")?
                         }
@@ -268,10 +268,10 @@ fn parachute(ctx: &mut Context, msg: &Message) -> CommandResult {
                 // Neither is empty. Gotta search from both.
 
                 let mut candidates1: Vec<_> = lf
-                    .a_side_hop1zuo1
+                    .f.a_side_hop1zuo1
                     .iter()
                     .filter_map(|pi| {
-                        if matcher(pi.color, opt_color) && matcher(pi.profession, opt_prof) {
+                        if matcher(pi.color, opt_color) && matcher(pi.prof, opt_prof) {
                             Some((Side::ASide, pi))
                         } else {
                             None
@@ -280,10 +280,10 @@ fn parachute(ctx: &mut Context, msg: &Message) -> CommandResult {
                     .collect();
 
                 let candidates2: Vec<_> = lf
-                    .ia_side_hop1zuo1
+                    .f.ia_side_hop1zuo1
                     .iter()
                     .filter_map(|pi| {
-                        if matcher(pi.color, opt_color) && matcher(pi.profession, opt_prof) {
+                        if matcher(pi.color, opt_color) && matcher(pi.prof, opt_prof) {
                             Some((Side::IASide, pi))
                         } else {
                             None
@@ -295,10 +295,10 @@ fn parachute(ctx: &mut Context, msg: &Message) -> CommandResult {
 
                 match &candidates1[..] {
                     [] => report_error(ctx, msg, "No piece in hop1zuo1 matches the description")?,
-                    [(s, pi)] => (*s, pi.color, pi.profession),
+                    [(s, pi)] => (*s, pi.color, pi.prof),
                     [(s, pi), ..] => {
                         if is_all_same(&candidates1) {
-                            (*s, pi.color, pi.profession)
+                            (*s, pi.color, pi.prof)
                         } else {
                             report_error(ctx, msg, "Not enough info to identify the piece. Add side/color/profession and try again")?
                         }
