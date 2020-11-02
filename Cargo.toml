@@ -9,9 +9,6 @@ edition = "2018"
 [dependencies]
 serde_json = "1.0.59"
 serenity = "0.9.0" 
-# Not upgrading to 0.9.0, 
-# since serenity is now fully .await and we have 
-# type `std::sync::MutexGuard<'_, std::vec::Vec<std::string::String>>` which is not `Send`
 render_cerke_board = "0.1.10"
 lazy_static = "1.4.0"
 boolinator = "2.4.0"
