@@ -114,7 +114,7 @@ async fn if_none_report_error<T>(
 async fn expect_at_least_how_many(
     ctx: &Context,
     msg: &Message,
-    howmany_expected: usize,
+    how_many_expected: usize,
 ) -> Result<Vec<String>, CommandError> {
     use boolinator::Boolinator;
 
@@ -126,10 +126,10 @@ async fn expect_at_least_how_many(
     if_none_report_error(
         ctx,
         msg,
-        (input.len() > howmany_expected).as_some(()),
+        (input.len() > how_many_expected).as_some(()),
         &format!(
             "Not enough arguments. Expected: {}, got: {}",
-            howmany_expected,
+            how_many_expected,
             input.len() - 1
         ),
     )
@@ -233,14 +233,14 @@ fn get_scp(
 
         candidates1.extend(candidates2);
 
-        match &candidates1[..] {
-            [] => return Err("No piece in hop1zuo1 matches the description"),
-            [(s, pi)] => return Ok((*s, pi.color, pi.prof)),
+        return match &candidates1[..] {
+            [] => Err("No piece in hop1zuo1 matches the description"),
+            [(s, pi)] => Ok((*s, pi.color, pi.prof)),
             [(s, pi), ..] => {
                 if is_all_same(&candidates1) {
-                    return Ok((*s, pi.color, pi.prof));
+                    Ok((*s, pi.color, pi.prof))
                 } else {
-                    return Err("Not enough info to identify the piece. Add side/color/profession and try again");
+                    Err("Not enough info to identify the piece. Add side/color/profession and try again")
                 }
             }
         }
