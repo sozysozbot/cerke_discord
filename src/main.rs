@@ -322,7 +322,7 @@ async fn parachute(ctx: &Context, msg: &Message) -> CommandResult {
                     "parachute: dst {:?}, side: {:?}, color: {:?}, prof: {:?}",
                     dst, side, color, profession
                 );
-                Ok(field.from_hop1zuo1(dst, side, color, profession))
+                Ok(field.place_from_hop1zuo1(dst, side, color, profession))
             }
         }
     };

@@ -7,10 +7,10 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde_json = "1.0.59"
-serenity = "0.9.0" 
-render_cerke_board = "0.1.10"
+serde_json = "1.0.60"
+serenity = "0.9.3" 
+render_cerke_board = "0.1.11"
 lazy_static = "1.4.0"
 boolinator = "2.4.0"
-cetkaik_core = "0.1.10"
+cetkaik_core = "0.2.0"
 tokio = { version = "0.2", features = ["macros"] }
