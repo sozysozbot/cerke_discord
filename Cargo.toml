@@ -12,5 +12,5 @@ serenity = "0.9.3"
 render_cerke_board = "0.1.12"
 lazy_static = "1.4.0"
 boolinator = "2.4.0"
-cetkaik_core = "0.2.0"
+cetkaik_core = "0.2.4"
 tokio = { version = "0.2", features = ["macros"] }
