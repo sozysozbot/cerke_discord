@@ -123,9 +123,9 @@ dependencies = [
 
 [[package]]
 name = "cetkaik_core"
-version = "0.3.3"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "544368364b28ecd9397bd00d92986a4b87abc9ef0b8c060f6ac8d8ecc199a873"
+checksum = "243bd455d84c8dbca1079d6371731524a44b70f409297ec19fe01986506a2a51"
 dependencies = [
  "maplit",
  "serde",
@@ -552,9 +552,9 @@ dependencies = [
 
 [[package]]
 name = "image"
-version = "0.23.12"
+version = "0.23.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ce04077ead78e39ae8610ad26216aed811996b043d47beed5090db674f9e9b5"
+checksum = "293f07a1875fa7e9c5897b51aa68b2d8ed8271b87e1a44cb64b9c3d98aabbc0d"
 dependencies = [
  "bytemuck",
  "byteorder",
@@ -971,9 +971,9 @@ dependencies = [
 
 [[package]]
 name = "rand"
-version = "0.8.2"
+version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18519b42a40024d661e1714153e9ad0c3de27cd495760ceb09710920f1098b1e"
+checksum = "0ef9e7e66b4468674bfcb0c81af8b7fa0bb154fa9f28eb840da5c447baeb8d7e"
 dependencies = [
  "libc",
  "rand_chacha 0.3.0",
@@ -1026,7 +1026,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "da9e8f32ad24fb80d07d2323a9a2ce8b30d68a62b8cb4df88119ff49a698f038"
 dependencies = [
  "num-traits",
- "rand 0.8.2",
+ "rand 0.8.3",
 ]
 
 [[package]]
@@ -1073,13 +1073,13 @@ dependencies = [
 
 [[package]]
 name = "render_cerke_board"
-version = "0.1.14"
+version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39fde721355e7b6295743b627f44d1cdef5fb327db8fbabb6a08f9d0ccd1f1b0"
+checksum = "470219e14d2f40316c0e91bd4800c9c2a55991be3e2d17fb5a3bdf80435b7de9"
 dependencies = [
  "cetkaik_core",
  "image",
- "rand 0.8.2",
+ "rand 0.8.3",
  "rand_distr",
  "wood_grain",
 ]
@@ -1179,18 +1179,18 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.119"
+version = "1.0.123"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9bdd36f49e35b61d49efd8aa7fc068fd295961fd2286d0b2ee9a4c7a14e99cc3"
+checksum = "92d5161132722baa40d802cc70b15262b98258453e85e5d1d365c757c73869ae"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.119"
+version = "1.0.123"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "552954ce79a059ddd5fd68c271592374bd15cab2274970380c000118aeffe1cd"
+checksum = "9391c295d64fc0abb2c556bad848f33cb8296276b1ad2677d1ae1ace4f258f31"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1297,9 +1297,9 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "syn"
-version = "1.0.58"
+version = "1.0.60"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc60a3d73ea6594cd712d830cc1f0390fd71542d8c8cd24e70cc54cdfd5e05d5"
+checksum = "c700597eca8a5a762beb35753ef6b94df201c81cca676604f547495a0d7f0081"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1701,13 +1701,13 @@ dependencies = [
 
 [[package]]
 name = "wood_grain"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7fade3b369756c3793ecc826d6a2fee1633f137b2c92d0818c81793c46d8f141"
+checksum = "31b6c51e9f853ca70cdab7b794faf84c490dd4c4458fc1bf5eeec9a97807f03c"
 dependencies = [
  "image",
  "interpolation",
- "rand 0.8.2",
+ "rand 0.8.3",
  "rand_distr",
 ]
 
