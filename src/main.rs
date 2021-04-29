@@ -204,47 +204,46 @@ fn get_scp(
         };
 
         return Ok((Side::ASide, c, p));
-    } else {
-        // Neither is empty. Gotta search from both.
+    }
+    // Neither is empty. Gotta search from both.
 
-        let mut candidates1: Vec<_> =
-            lf.f.a_side_hop1zuo1
-                .iter()
-                .filter_map(|pi| {
-                    if matcher(pi.color, opt_color) && matcher(pi.prof, opt_prof) {
-                        Some((Side::ASide, pi))
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-
-        let candidates2: Vec<_> =
-            lf.f.ia_side_hop1zuo1
-                .iter()
-                .filter_map(|pi| {
-                    if matcher(pi.color, opt_color) && matcher(pi.prof, opt_prof) {
-                        Some((Side::IASide, pi))
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-
-        candidates1.extend(candidates2);
-
-        return match &candidates1[..] {
-            [] => Err("No piece in hop1zuo1 matches the description"),
-            [(s, pi)] => Ok((*s, pi.color, pi.prof)),
-            [(s, pi), ..] => {
-                if is_all_same(&candidates1) {
-                    Ok((*s, pi.color, pi.prof))
+    let mut candidates1: Vec<_> =
+        lf.f.a_side_hop1zuo1
+            .iter()
+            .filter_map(|pi| {
+                if matcher(pi.color, opt_color) && matcher(pi.prof, opt_prof) {
+                    Some((Side::ASide, pi))
                 } else {
-                    Err("Not enough info to identify the piece. Add side/color/profession and try again")
+                    None
                 }
+            })
+            .collect();
+
+    let candidates2: Vec<_> =
+        lf.f.ia_side_hop1zuo1
+            .iter()
+            .filter_map(|pi| {
+                if matcher(pi.color, opt_color) && matcher(pi.prof, opt_prof) {
+                    Some((Side::IASide, pi))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+    candidates1.extend(candidates2);
+
+    return match &candidates1[..] {
+        [] => Err("No piece in hop1zuo1 matches the description"),
+        [(s, pi)] => Ok((*s, pi.color, pi.prof)),
+        [(s, pi), ..] => {
+            if is_all_same(&candidates1) {
+                Ok((*s, pi.color, pi.prof))
+            } else {
+                Err("Not enough info to identify the piece. Add side/color/profession and try again")
             }
         }
-    }
+    };
 }
 
 #[command]
@@ -493,7 +492,7 @@ async fn scold_operation_error(
 async fn ping(ctx: &Context, msg: &Message) -> CommandResult {
     let content = format!("Pong! {}", msg.content);
     use serenity::model::misc::Mentionable;
-    let mut gen = msg.author.mention();
+    let mut gen = msg.author.mention().to_string();
     gen.push_str(": ");
     gen.push_str(&content);
 
