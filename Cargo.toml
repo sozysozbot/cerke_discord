@@ -14,4 +14,4 @@ render_cerke_board = "0.1.14"
 lazy_static = "1.4.0"
 boolinator = "2.4.0"
 cetkaik_core = "0.3.3"
-tokio = { version = "0.2", features = ["macros"] }
+tokio = { version = "0.3", features = ["macros"] }
