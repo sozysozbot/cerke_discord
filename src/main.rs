@@ -1,4 +1,4 @@
-#![warn(clippy::pedantic)]
+#![warn(clippy::pedantic, clippy::nursery)]
 #![allow(clippy::non_ascii_literal)]
 
 #[macro_use]
@@ -104,7 +104,10 @@ async fn if_none_report_error<T>(
     msg: &Message,
     a: Option<T>,
     report: &str,
-) -> Result<T, CommandError> {
+) -> Result<T, CommandError>
+where
+    T: std::marker::Send,
+{
     match a {
         None => report_error(ctx, msg, report).await,
         Some(k) => Ok(k),
@@ -233,7 +236,7 @@ fn get_scp(
 
     candidates1.extend(candidates2);
 
-    return match &candidates1[..] {
+    match &candidates1[..] {
         [] => Err("No piece in hop1zuo1 matches the description"),
         [(s, pi)] => Ok((*s, pi.color, pi.prof)),
         [(s, pi), ..] => {
@@ -243,7 +246,7 @@ fn get_scp(
                 Err("Not enough info to identify the piece. Add side/color/profession and try again")
             }
         }
-    };
+    }
 }
 
 #[command]
